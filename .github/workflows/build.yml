@@ -31,7 +31,7 @@ jobs:
           msystem: MINGW64
           update: true
           install: >-
-            git tar patch dos2unix
+            git tar patch dos2unix make
             mingw-w64-x86_64-toolchain
             mingw-w64-x86_64-cmake
             mingw-w64-x86_64-ninja
@@ -128,7 +128,7 @@ jobs:
 
       - name: Skonfiguruj budowanie
         run: |
-          cmake -S veyon-src -B build -G Ninja \
+          cmake -S veyon-src -B build -G "MSYS Makefiles" \
             -DCMAKE_BUILD_TYPE=Release \
             -DMINGW_PREFIX=/mingw64 \
             -DMINGW_TARGET=x86_64-w64-mingw32 \
@@ -141,7 +141,8 @@ jobs:
       - name: Zbuduj instalator Windows 64-bit
         run: |
           cd build
-          ninja create-windows-installer
+          cmake --build . -j4
+          cmake --build . --target create-windows-installer
           ls -la veyon-*setup.exe
           mkdir -p ../wynik
           cp veyon-*setup.exe ../wynik/NordEdu-Support-4.11.4-win64-setup.exe
