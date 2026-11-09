@@ -93,6 +93,12 @@ jobs:
           chmod +x /usr/bin/todos
           # natywna kompilacja na Windows zglasza architekture AMD64
           sed -i 's/CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64"/CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64"/' CMakeLists.txt
+          # nowszy kompilator MSYS2: ostrzezenia nie moga przerywac budowania
+          sed -i 's/;-Werror//' cmake/modules/SetDefaultTargetProperties.cmake
+          # makro UNICODE wybieralo wersje "wide" funkcji Windows w bibliotece VNC
+          sed -i 's/GetComputerName(/GetComputerNameA(/' 3rdparty/libvncserver/src/libvncserver/main.c
+          grep -n "Werror" cmake/modules/SetDefaultTargetProperties.cmake || true
+          grep -n "GetComputerName" 3rdparty/libvncserver/src/libvncserver/main.c
           f=cmake/modules/WindowsInstaller.cmake
           sed -i \
             -e 's|^set(DLLDIR_GCC .*|set(DLLDIR_GCC "${MINGW_PREFIX}/bin")|' \
