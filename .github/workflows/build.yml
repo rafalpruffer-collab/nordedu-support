@@ -38,15 +38,26 @@ jobs:
             mingw-w64-x86_64-qt6-translations
             mingw-w64-x86_64-qt6-httpserver
             mingw-w64-x86_64-qt6-websockets
-            mingw-w64-x86_64-qca-qt6
             mingw-w64-x86_64-openssl
-            mingw-w64-x86_64-openldap
-            mingw-w64-x86_64-cyrus-sasl
             mingw-w64-x86_64-lzo2
             mingw-w64-x86_64-libjpeg-turbo
             mingw-w64-x86_64-libpng
             mingw-w64-x86_64-zlib
-            mingw-w64-x86_64-libvncserver
+
+      - name: Zbuduj biblioteke QCA (szyfrowanie, brak gotowego pakietu MSYS2)
+        run: |
+          git clone --depth 1 --branch v2.3.10 https://github.com/KDE/qca.git qca-src
+          cmake -S qca-src -B qca-build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=/mingw64 \
+            -DBUILD_WITH_QT6=ON \
+            -DBUILD_TESTS=OFF \
+            -DBUILD_TOOLS=OFF \
+            -DBUILD_PLUGINS=ossl \
+            -DQCA_PLUGINS_INSTALL_DIR=/mingw64/lib/qca-qt6/crypto
+          cmake --build qca-build
+          cmake --install qca-build
+          ls -la /mingw64/bin/libqca-qt6.dll /mingw64/lib/qca-qt6/crypto/
 
       - name: Pobierz kod zrodlowy Veyon 4.11.4
         run: |
@@ -71,6 +82,8 @@ jobs:
         run: |
           cd veyon-src
           sh .ci/common/strip-ultravnc-sources.sh
+          # wtyczka LDAP (import z Active Directory) pomijana - brak bibliotek OpenLDAP w MSYS2
+          rm -rf plugins/ldap
           # narzedzie "todos" (konwersja koncow linii) zastepuje unix2dos
           printf '#!/bin/sh\nexec unix2dos "$@"\n' > /usr/bin/todos
           chmod +x /usr/bin/todos
@@ -83,6 +96,10 @@ jobs:
             -e 's|${DLLDIR_LIB}/libwinpthread-1.dll|${DLLDIR}/libwinpthread-1.dll|' \
             -e 's|${MINGW_PREFIX}/plugins|${MINGW_PREFIX}/share/qt6/plugins|g' \
             -e '/interception\.dll/d' \
+            -e '/libsasl2-3\.dll/d' \
+            -e '/libldap\.dll/d' \
+            -e '/libvncserver\.dll/d' \
+            -e 's|^.*libvncclient\.dll.*|\tCOMMAND find . -name "libvnc*.dll" -not -path "./veyon-*" -exec cp "{}" ${WINDOWS_INSTALL_FILES}/ ";"|' \
             $f
           grep -n "DLLDIR_GCC\|zlib1\|winpthread\|share/qt6\|interception" $f
 
@@ -93,6 +110,7 @@ jobs:
             -DMINGW_PREFIX=/mingw64 \
             -DMINGW_TARGET=x86_64-w64-mingw32 \
             -DMINGW_TOOL_PREFIX=/mingw64/bin/ \
+            -DWITH_BUNDLED_LIBVNC=ON \
             -DWITH_TESTS=OFF \
             -DWITH_LTO=OFF \
             -DWITH_UNITY_BUILD=OFF
