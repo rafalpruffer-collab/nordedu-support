@@ -63,6 +63,16 @@ jobs:
           cmake --install qca-build
           ls -la /mingw64/bin/libqca-qt6.dll /mingw64/lib/qca-qt6/crypto/
 
+      - name: Zbuduj biblioteke Interception (blokowanie klawiatury i myszy)
+        run: |
+          git clone --depth 1 https://github.com/oblitum/Interception.git interception-src
+          cd interception-src/library
+          gcc -shared -O2 -DINTERCEPTION_EXPORT interception.c -o interception.dll -Wl,--out-implib,libinterception.dll.a -lsetupapi
+          cp interception.h /mingw64/include/
+          cp interception.dll /mingw64/bin/
+          cp libinterception.dll.a /mingw64/lib/
+          ls -la /mingw64/bin/interception.dll
+
       - name: Pobierz kod zrodlowy Veyon 4.11.4
         run: |
           git config --global --add safe.directory '*'
@@ -109,7 +119,6 @@ jobs:
             -e 's|${DLLDIR_LIB}/zlib1.dll|${DLLDIR}/zlib1.dll|' \
             -e 's|${DLLDIR_LIB}/libwinpthread-1.dll|${DLLDIR}/libwinpthread-1.dll|' \
             -e 's|${MINGW_PREFIX}/plugins|${MINGW_PREFIX}/share/qt6/plugins|g' \
-            -e '/interception\.dll/d' \
             -e '/libsasl2-3\.dll/d' \
             -e '/libldap\.dll/d' \
             -e '/libvncserver\.dll/d' \
