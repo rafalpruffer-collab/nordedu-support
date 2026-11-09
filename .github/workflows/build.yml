@@ -61,7 +61,7 @@ jobs:
             -DQCA_PLUGINS_INSTALL_DIR=/mingw64/lib/qca-qt6/crypto
           cmake --build qca-build
           cmake --install qca-build
-          ls -la /mingw64/bin/libqca-qt6.dll /mingw64/lib/qca-qt6/crypto/
+          p=$(find /mingw64 qca-build -name '*qca-ossl*.dll' | head -1); echo "Wtyczka: $p"; mkdir -p /mingw64/lib/qca-qt6/crypto; [ "$p" -ef /mingw64/lib/qca-qt6/crypto/libqca-ossl.dll ] || cp "$p" /mingw64/lib/qca-qt6/crypto/libqca-ossl.dll; ls -la /mingw64/bin/libqca-qt6.dll /mingw64/lib/qca-qt6/crypto/
 
       - name: Zbuduj biblioteke Interception (blokowanie klawiatury i myszy)
         run: |
