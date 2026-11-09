@@ -110,7 +110,7 @@ jobs:
           # lupdate dostaje tysiace nazw plikow naraz - Windows ma limit dlugosci polecenia.
           # Zamiast odswiezac pliki .ts, tylko je "dotykamy" (tlumaczenie zostaje bez zmian).
           sed -i 's|COMMAND Qt${QT_MAJOR_VERSION}::lupdate.*|COMMAND ${CMAKE_COMMAND} -E touch ${ts_file}|' cmake/modules/CreateTranslations.cmake
-          grep -n "touch" cmake/modules/CreateTranslations.cmake
+          sed -i -e '/^File "/s|/|\\|g' -e '/"nsis\//s|/|\\|g' nsis/veyon.nsi.in; grep -n "nsis" nsis/veyon.nsi.in | head -n 12; grep -n "touch" cmake/modules/CreateTranslations.cmake
           grep -n "Werror" cmake/modules/SetDefaultTargetProperties.cmake || true
           grep -n "GetComputerName" 3rdparty/libvncserver/src/libvncserver/main.c
           f=cmake/modules/WindowsInstaller.cmake
