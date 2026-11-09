@@ -3,6 +3,7 @@ name: Zbuduj NordEdu Support
 # Uruchamiane recznie: zakladka "Actions" -> "Zbuduj NordEdu Support" -> "Run workflow".
 # Pobiera oryginalny kod Veyon 4.11.4, nakłada zmiany Nordweco (nordedu-support.patch)
 # i buduje instalator Windows 64-bit oraz paczke ze zrodlami (wymog licencji GPL).
+# Budowanie odbywa sie na Windows z gotowymi pakietami MSYS2 (MinGW-w64 + Qt 6).
 
 on:
   workflow_dispatch:
@@ -12,11 +13,40 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    # oficjalny obraz Veyon z kompilatorem mingw-w64, Qt 6 i NSIS dla Windows
-    container: registry.gitlab.com/veyon/ci-mingw-w64:main
+    runs-on: windows-latest
+    timeout-minutes: 150
+    defaults:
+      run:
+        shell: msys2 {0}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Zainstaluj narzedzia budowania (MSYS2)
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            git tar patch dos2unix
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-nsis
+            mingw-w64-x86_64-qt6-base
+            mingw-w64-x86_64-qt6-5compat
+            mingw-w64-x86_64-qt6-tools
+            mingw-w64-x86_64-qt6-translations
+            mingw-w64-x86_64-qt6-httpserver
+            mingw-w64-x86_64-qt6-websockets
+            mingw-w64-x86_64-qca-qt6
+            mingw-w64-x86_64-openssl
+            mingw-w64-x86_64-openldap
+            mingw-w64-x86_64-cyrus-sasl
+            mingw-w64-x86_64-lzo2
+            mingw-w64-x86_64-libjpeg-turbo
+            mingw-w64-x86_64-libpng
+            mingw-w64-x86_64-zlib
+            mingw-w64-x86_64-libvncserver
 
       - name: Pobierz kod zrodlowy Veyon 4.11.4
         run: |
@@ -37,10 +67,40 @@ jobs:
           cp nordedu-support.patch wynik/
           tar --exclude-vcs -czf wynik/NordEdu-Support-4.11.4-zrodla.tar.gz veyon-src nordedu-support.patch COPYING
 
-      - name: Zbuduj instalator Windows 64-bit
+      - name: Dostosuj skrypty pakujace Veyon do ukladu MSYS2
         run: |
           cd veyon-src
-          .ci/windows/build.sh x86_64 create-windows-installer
+          sh .ci/common/strip-ultravnc-sources.sh
+          # narzedzie "todos" (konwersja koncow linii) zastepuje unix2dos
+          printf '#!/bin/sh\nexec unix2dos "$@"\n' > /usr/bin/todos
+          chmod +x /usr/bin/todos
+          # natywna kompilacja na Windows zglasza architekture AMD64
+          sed -i 's/CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64"/CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64"/' CMakeLists.txt
+          f=cmake/modules/WindowsInstaller.cmake
+          sed -i \
+            -e 's|^set(DLLDIR_GCC .*|set(DLLDIR_GCC "${MINGW_PREFIX}/bin")|' \
+            -e 's|${DLLDIR_LIB}/zlib1.dll|${DLLDIR}/zlib1.dll|' \
+            -e 's|${DLLDIR_LIB}/libwinpthread-1.dll|${DLLDIR}/libwinpthread-1.dll|' \
+            -e 's|${MINGW_PREFIX}/plugins|${MINGW_PREFIX}/share/qt6/plugins|g' \
+            -e '/interception\.dll/d' \
+            $f
+          grep -n "DLLDIR_GCC\|zlib1\|winpthread\|share/qt6\|interception" $f
+
+      - name: Skonfiguruj budowanie
+        run: |
+          cmake -S veyon-src -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DMINGW_PREFIX=/mingw64 \
+            -DMINGW_TARGET=x86_64-w64-mingw32 \
+            -DMINGW_TOOL_PREFIX=/mingw64/bin/ \
+            -DWITH_TESTS=OFF \
+            -DWITH_LTO=OFF \
+            -DWITH_UNITY_BUILD=OFF
+
+      - name: Zbuduj instalator Windows 64-bit
+        run: |
+          cd build
+          ninja create-windows-installer
           ls -la veyon-*setup.exe
           mkdir -p ../wynik
           cp veyon-*setup.exe ../wynik/NordEdu-Support-4.11.4-win64-setup.exe
