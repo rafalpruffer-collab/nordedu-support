@@ -123,8 +123,8 @@ jobs:
             -e '/libldap\.dll/d' \
             -e '/libvncserver\.dll/d' \
             -e '/plugins\/lib\*\.dll/d' \
-            -e 's|^.*vnchooks\.dll.*|\tCOMMAND find . -name vnchooks.dll -not -path "./veyon-*" -exec cp "{}" ${WINDOWS_INSTALL_FILES}/ ";"\n\tCOMMAND rm -f ${WINDOWS_INSTALL_FILES}/plugins/vnchooks.dll|' \
-            -e 's|^.*libvncclient\.dll.*|\tCOMMAND find . -name "libvnc*.dll" -not -path "./veyon-*" -exec cp "{}" ${WINDOWS_INSTALL_FILES}/ ";"|' \
+            -e 's|^.*vnchooks\.dll.*|\tCOMMAND find . -name vnchooks.dll -not -path "./veyon-*" -exec cp -t ${WINDOWS_INSTALL_FILES}/ {} +\n\tCOMMAND rm -f ${WINDOWS_INSTALL_FILES}/plugins/vnchooks.dll|' \
+            -e 's|^.*libvncclient\.dll.*|\tCOMMAND find . -name "libvnc*.dll" -not -path "./veyon-*" -exec cp -t ${WINDOWS_INSTALL_FILES}/ {} +|' \
             $f
           grep -n "DLLDIR_GCC\|zlib1\|winpthread\|share/qt6\|interception" $f
 
