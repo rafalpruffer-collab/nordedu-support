@@ -121,7 +121,7 @@ jobs:
             -e 's|${MINGW_PREFIX}/plugins|${MINGW_PREFIX}/share/qt6/plugins|g' \
             -e 's|libjpeg-62\.dll|libjpeg-*.dll|' \
             -e '/libsasl2-3\.dll/d' \
-            -e '/libldap\.dll/d' \
+            -e '/libldap\.dll/d' -e '/libssp-0\.dll/d' \
             -e '/libvncserver\.dll/d' \
             -e '/plugins\/lib\*\.dll/d' \
             -e 's|^.*vnchooks\.dll.*|\tCOMMAND find plugins -name vnchooks.dll -exec cp -t ${WINDOWS_INSTALL_FILES}/ {} +\n\tCOMMAND rm -f ${WINDOWS_INSTALL_FILES}/plugins/vnchooks.dll|' \
