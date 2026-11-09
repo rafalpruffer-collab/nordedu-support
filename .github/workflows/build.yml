@@ -134,6 +134,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DMINGW_PREFIX=/mingw64 \
             -DMINGW_TARGET=x86_64-w64-mingw32 \
+            -DMINGW_TOOL_PREFIX=/mingw64/bin/ \
             -DWITH_BUNDLED_LIBVNC=ON \
             -DWITH_TESTS=OFF \
             -DWITH_LTO=OFF \
@@ -150,6 +151,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: NordEduKSupport
+          name: NordEdu-Support
           path: wynik/*
           if-no-files-found: error
