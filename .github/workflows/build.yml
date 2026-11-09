@@ -119,6 +119,7 @@ jobs:
             -e 's|${DLLDIR_LIB}/zlib1.dll|${DLLDIR}/zlib1.dll|' \
             -e 's|${DLLDIR_LIB}/libwinpthread-1.dll|${DLLDIR}/libwinpthread-1.dll|' \
             -e 's|${MINGW_PREFIX}/plugins|${MINGW_PREFIX}/share/qt6/plugins|g' \
+            -e 's|libjpeg-62\.dll|libjpeg-*.dll|' \
             -e '/libsasl2-3\.dll/d' \
             -e '/libldap\.dll/d' \
             -e '/libvncserver\.dll/d' \
@@ -139,6 +140,15 @@ jobs:
             -DWITH_TESTS=OFF \
             -DWITH_LTO=OFF \
             -DWITH_UNITY_BUILD=OFF
+
+      - name: Sprawdz czy sa wszystkie potrzebne pliki
+        run: |
+          for f in libjpeg-*.dll libpng16-16.dll libcrypto-3*.dll libssl-3*.dll libqca-qt6.dll liblzo2-2.dll interception.dll zlib1.dll libwinpthread-1.dll libstdc++-6.dll libssp-0.dll libgcc_s_seh-1.dll Qt6Core.dll Qt6Core5Compat.dll Qt6Gui.dll Qt6Widgets.dll Qt6Network.dll Qt6Concurrent.dll Qt6HttpServer.dll Qt6WebSockets.dll; do
+            ls /mingw64/bin/$f > /dev/null 2>&1 && echo "OK   $f" || echo "BRAK $f"
+          done
+          ls /mingw64/share/qt6/plugins/imageformats/qjpeg.dll /mingw64/share/qt6/plugins/platforms/qwindows.dll /mingw64/share/qt6/plugins/tls/qopensslbackend.dll || true
+          ls /mingw64/share/qt6/plugins/styles || true
+          ls /mingw64/lib/qca-qt6/crypto || true
 
       - name: Zbuduj instalator Windows 64-bit
         run: |
