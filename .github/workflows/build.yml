@@ -1,0 +1,52 @@
+name: Zbuduj NordEdu Support
+
+# Uruchamiane recznie: zakladka "Actions" -> "Zbuduj NordEdu Support" -> "Run workflow".
+# Pobiera oryginalny kod Veyon 4.11.4, nakłada zmiany Nordweco (nordedu-support.patch)
+# i buduje instalator Windows 64-bit oraz paczke ze zrodlami (wymog licencji GPL).
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # oficjalny obraz Veyon z kompilatorem mingw-w64, Qt 6 i NSIS dla Windows
+    container: registry.gitlab.com/veyon/ci-mingw-w64:main
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pobierz kod zrodlowy Veyon 4.11.4
+        run: |
+          git config --global --add safe.directory '*'
+          git clone https://github.com/veyon/veyon.git veyon-src
+          cd veyon-src
+          git checkout v4.11.4
+          git submodule update --init --recursive
+
+      - name: Naloz zmiany NordEdu Support
+        run: |
+          cd veyon-src
+          git apply --binary ../nordedu-support.patch
+
+      - name: Przygotuj paczke ze zrodlami (GPL) - przed budowaniem
+        run: |
+          mkdir -p wynik
+          cp nordedu-support.patch wynik/
+          tar --exclude-vcs -czf wynik/NordEdu-Support-4.11.4-zrodla.tar.gz veyon-src nordedu-support.patch COPYING
+
+      - name: Zbuduj instalator Windows 64-bit
+        run: |
+          cd veyon-src
+          .ci/windows/build.sh x86_64 create-windows-installer
+          ls -la veyon-*setup.exe
+          mkdir -p ../wynik
+          cp veyon-*setup.exe ../wynik/NordEdu-Support-4.11.4-win64-setup.exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NordEdu-Support
+          path: wynik/*
+          if-no-files-found: error
